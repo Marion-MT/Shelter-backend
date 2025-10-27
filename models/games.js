@@ -10,7 +10,7 @@ const stateOfGaugesSchema = mongoose.Schema({
 
 const gameSchema = mongoose.Schema({
     player: { type: mongoose.Schema.Types.ObjectId, ref: 'users' },
-    currentCard: { type: mongoose.Schema.Types.ObjectId, ref: 'cards' },
+    currentCard: { type: mongoose.Schema.Types.ObjectId, ref: 'cards', default: null },
     usedCards: [{ type: mongoose.Schema.Types.ObjectId, ref: 'cards' }],
     ended : {type: Boolean, default: false},
     currentScenarios: [String],
