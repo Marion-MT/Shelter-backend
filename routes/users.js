@@ -29,7 +29,7 @@ router.post('/signup', (req, res) => {
         res.json({result: true, data})
       })
     } else {
-      //si l'utilisatuer existe déjà
+      //si l'utilisateur existe déjà
       res.json({result: false, error : 'User already exists'})
     }
   })
