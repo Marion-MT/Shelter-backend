@@ -102,6 +102,7 @@ router.get('/', (req, res) => {
 router.get('/profile', authenticateToken, (req, res) =>{
   const userId=req.user.userId
   User.findById(userId)
+  .select('-password')
   .then(data => {
     res.json({result: true, user: data})
   })
