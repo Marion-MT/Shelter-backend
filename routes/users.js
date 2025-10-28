@@ -99,12 +99,22 @@ router.get('/', (req, res) => {
 
 
       ///////// GET user profile  ///////////
-router.get('/profile', authenticateToken, (req, res) =>{
+router.get('/data', authenticateToken, (req, res) =>{
   const userId=req.user.userId
   User.findById(userId)
   .select('-password')
   .then(data => {
-    res.json({result: true, user: data})
+    if (userId){
+      res.json({result: true, 
+        email: data.email,
+        bestScore: data.bestScore,
+        currentGame: data.currentGame,
+        settings: data.settings,
+        UnlockedAchievements: data.UnlockedAchievements
+      })
+    } else {
+      res.json({result: false, error : "Vous n'êtes pas autorisé"})
+    }
   })
 })
 
