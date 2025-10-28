@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const settingSchema = mongoose.Schema({
- volume: Number,
+ volume: {type: Number, default: 50},
  soundOn: {type: Boolean, default: true},
  difficulty: String,
 });

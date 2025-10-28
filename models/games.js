@@ -19,7 +19,13 @@ const gameSchema = mongoose.Schema({
     lastEventDay: { type: Number, default : 0 },
     stateOfGauges: {
         type: stateOfGaugesSchema,
-        default: () => ({})
+        default: () => ({
+            food: 50,
+            moral: 50,
+            health: 50,
+            security: 50,
+            hunger: 50,
+                })
     }
 });
 

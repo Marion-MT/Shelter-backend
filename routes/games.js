@@ -4,7 +4,8 @@ const Game = require('../models/games')
 const authenticateToken = require('../middlewares/authMiddleWare');;
 const User = require('../models/users')
 const Card = require('../models/cards')
-let cardSelectGlobal = null
+const { checkBody } = require('../modules/checkBody')
+const { applyEffects } = require('../modules/applyEffects')
 
 
 /* nouvelle games */
@@ -15,7 +16,7 @@ const userId = req.user.userId
 
 const activeGame = await Game.findOne({ player: userId , ended: false });
 const cards = await Card.find();
-cardSelectGlobal = cards[Math.floor(Math.random() * (cards.length))];
+const cardSelect = cards[Math.floor(Math.random() * (cards.length))];
 
 // verifie si une partie est en court et la transforme en partie terminer
     if(activeGame) {
@@ -26,7 +27,7 @@ cardSelectGlobal = cards[Math.floor(Math.random() * (cards.length))];
     const newGame = await new Game({
 
     player: userId,
-    currentCard: cardSelectGlobal._id,
+    currentCard: cardSelect._id,
     })
     await newGame.save()
 
@@ -99,24 +100,70 @@ router.get('/current', authenticateToken, async (req,res) => {
 
 router.post('/choice', authenticateToken, async (req,res) => {
     try {
-         const { choice } = req.body;
+        const userId = req.user.userId
+        const { choice } = req.body;
+        
+        if (!checkBody(req.body,['choice'])) {
+            return res.json({ result: false, error: 'Missing or empty fields'})
+            ;
+        }
+        
+        const user = await User.findById(userId)
+        .populate({
+            path: 'currentGame',
+            populate: 'currentCard'
+        })
+        
+        if(!user.currentGame.currentCard) {
+            return res.json({ result:false , error : 'Aucune carte selectionner !'})
+        }
+            console.log(choice, 'current game :', user.currentCard)
+            const effects = choice === 'right' ? user.currentGame.currentCard.right.effect : user.currentGame.currentCard.left.effect;
 
-    if (!checkBody(req.body,['choice'])) {
-        return res.json({ result: false, error: 'Missing or empty fields'})
-        ;
-    }
+            /*console.log('effects =' ,effects)
+        
+            const game = await Game.findById(user.currentGame._id);
 
-    if(!cardSelectGlobal) {
-        return res.json({ result:false , error : 'Aucune carte selectionner !'})
-    }
+        for (const key in effects){
 
 
 
+                    game.stateOfGauges[key] += effects[key]
 
+            }
+        game.markModified('stateOfGauges');
+
+        await game.save();
+
+
+        */
+        // ICI push et changement de card selectionner
+        user.currentGame.usedCards.push(user.currentGame.currentCard._id)
+            await user.save()
+
+            //const updateGame = await Game.findById(user.currentGame._id).populate('currentCard')
+        const exludedIds =  user.currentGame.usedCards  
+        // <-- Find de card en excluant les IDs regroupés dans "exclude" grâce à $nin JE NE CONNAISSAIS PAS ! -->
+        const cardsFiltred = await Card.find({ _id: { $nin: exludedIds } });  
+
+        if(cardsFiltred.length === 0) {
+            return res.json({ result : false, error: 'Aucune carte disponible'})
+        }
+        const cardSelect = cardsFiltred[Math.floor(Math.random() * (cardsFiltred.length))];
+
+
+        await user.currentGame.save()
+
+        //console.log(' filter card: ',cardsfilter)
+
+
+    return res.json({ result : true , gameMAJ: user.currentGame })
 
     } catch (err) {
         return res.json({ result: false, error: err.message})
     }
 })
+
+
 
 module.exports = router;
