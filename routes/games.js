@@ -103,7 +103,7 @@ router.post('/choice', authenticateToken, async (req,res) => {
     try {
         const userId = req.user.userId
         const { choice } = req.body;
-        
+
         if (!checkBody(req.body,['choice'])) {
             return res.json({ result: false, error: 'Missing or empty fields'})
             ;
@@ -131,7 +131,7 @@ router.post('/choice', authenticateToken, async (req,res) => {
             await game.save();
 
          for (const [key, value] of Object.entries(game.stateOfGauges._doc)) { /// <--- obliger d'utiliser Object. et ._doc pour recuperer en brut car c'est un sous document \\\ on recuper clé et valeur ///
-                if (value < 0) {
+                if (key != 'food' && value <= 0) {
                     
                     const death = await Ending.findOne({ type:key})
                     
