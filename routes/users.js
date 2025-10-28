@@ -99,20 +99,52 @@ router.get('/', (req, res) => {
 
 
       ///////// GET user profile  ///////////
-router.get('/profile', authenticateToken, (req, res) =>{
+router.get('/data', authenticateToken, (req, res) =>{
   const userId=req.user.userId
   User.findById(userId)
+  .select('-password')
   .then(data => {
+    if (userId){
+      res.json({result: true, 
+        email: data.email,
+        bestScore: data.bestScore,
+        currentGame: data.currentGame,
+        settings: data.settings,
+        UnlockedAchievements: data.UnlockedAchievements
+      })
+    } else {
+      res.json({result: false, error : "Vous n'êtes pas autorisé"})
+    }
+  })
+})
+
+///////////////////Routes PUT//////////////////////
+///////// Reset stats/achievements  /////////
+router.put('/resStats', authenticateToken, (req,res) => {
+  const userId= req.user.userId
+  User.findByIdAndUpdate(
+    userId,
+    {bestScore : 0, historicGames: [], UnlockedAchievements: [], currentGame : null},
+    {new : true} //permet à la requête de renvoyer les infos du User mis à jours 
+  ).then(data => {
     res.json({result: true, user: data})
   })
 })
 
 
-///////////////////Route Delete//////////////////////
-    ///////// Delete stats/achievements  /////////
-router.delete
+///////// Give stats/achievements pour faire des tests en dev /////////
+router.put('/givStats', authenticateToken, (req,res) => {
+  const userId= req.user.userId
+  User.findByIdAndUpdate(
+    userId,
+    {bestScore : 105, historicGames: ["68ff940e76f8c00d29c467df"], UnlockedAchievements: [], currentGame : "507f1f77bcf86cd799439011"},
+    {new : true} //permet à la requête de renvoyer les infos du User mis à jours 
+  ).then(data => {
+    res.json({result: true, user: data})
+  })
+})
 
-
+///////////////////Routes Delete//////////////////////
     ///////// Delete account  /////////
                               //↓ middleware//
 router.delete('/delAccount', authenticateToken, (req, res) => {
