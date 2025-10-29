@@ -9,24 +9,27 @@ const authenticateToken = require ('../middlewares/authMiddleWare')
 
 /////////////////Routes POST////////////////////
       ////////Route Inscription////////
-
-      // Check si tous les champs sont copmplétés
-router.post('/signup', (req, res) => {
+      router.post('/signup', (req, res) => {
+        // Check si tous les champs sont copmplétés
   if (!checkBody(req.body,['email','password'])) {
     res.json({result: false, error:'Missing or empty fields'});
     return;
   }
+  try {
   const {email, password} = req.body;
     // Check si utilisateur déjà inscrit avant de créer un nouvel utilisateur
-  User.findOne({email}).then(data =>{
+  User.findOne({email})
+  .then(data =>{
     if (data === null) {
-      // si l'utilisateur n'existe pas
+      // si l'utilisateur n'existe pas créationb nouvel utilisateur
       const hash = bcrypt.hashSync(password, 10);
       const newUser = new User({
         email,
         password: hash, 
       })
-      newUser.save().then(data => {
+      newUser.save()
+      .then(data => {
+        //création du token
         const token = jwt.sign(
           {id: data._id},
           process.env.JWT_SECRET,
@@ -41,12 +44,24 @@ router.post('/signup', (req, res) => {
           email: data.email}
         })
       })
+      .catch(err => {
+        console.error('Erreur lors du .save :', err.message)
+        res.status(500).json({result: false, error: 'Erreur serveur lors de la sauvegarde' })
+      })
     } else {
       //si l'utilisateur existe déjà
       res.json({result: false, error : 'User already exists'})
     }
   })
-} )
+  .catch(err => {
+    console.error('Erreur lors du findOne :', err.message);
+    res.status(500).json({result: false, error: 'Erreur serveur lors de la recherche utilisateur'})
+  })
+} catch (error) {
+  console.error('Erreur serveur Signup', error.message)
+  res.status(500).json({result: false, error: 'Internal serveur error - Signup'})
+}
+})
 
 
 
@@ -57,6 +72,7 @@ router.post('/signin', (req, res) => {
     res.json({result: false, error : 'Missing or empty fields'});
     return;
   }
+  try {
   const {email, password} = req.body;
   User.findOne({email}).then(data=>{
     if (data && bcrypt.compareSync(password, data.password)){
@@ -68,41 +84,61 @@ router.post('/signin', (req, res) => {
 
         //sauvegarde le token en BDD
         data.token = token;
-        data.save();
-
+        data.save().then(() =>{
         //Renvoyer le token au client
       res.json({result: true, 
         token, 
+        message: 'you are connected',
         user: {
           email: data.email,
-          message: 'you are connected',
           bestScore: data.bestScore,
           currentGame: data.currentGame,
           settings: data.settings,
           historicGames: data.historicGames,
           UnlockedAchievements: data.UnlockedAchievements
-        }})
+        }
+      })
+    })
+        .catch(err => {
+          console.error('Erreur lors du .save', err.message)
+          res.status(500).json({result: false, error: 'Erreur serveur lors de la sauvegarde'})
+        })
     } else {
       res.json({result : false, error: 'User not found or wrong password'})
     }
   })
+  .catch(err=>{
+    console.error('Erreur lors du findOne: ', err.message)
+    res.status(500).json({result: false, error: 'Erreur serveur lors de la recher utilisateur'})
+  })
+} catch (error) {
+  console.error('Erreur inattendue dans le signin : ', error.message)
+  res.status(500).json({result: false, error: 'Internal serveur error - Signin'})
+}
 })
 
 ///////// Reset stats/achievements  /////////
-router.post('/reset', authenticateToken, (req,res) => {
+router.post('/reset', authenticateToken, async (req,res) => {
+  try {
   const userId= req.user.userId
-  User.findByIdAndUpdate(
+  if (!userId){
+    return res.status(401).json({result: false, error: "Vous n'êtes pas autorisé"})
+  }
+  const updateUser = await User.findByIdAndUpdate(
     userId,
     {bestScore : 0, historicGames: [], UnlockedAchievements: [], currentGame : null},
     {new : true} //permet à la requête de renvoyer les infos du User mis à jours 
-  ).then(data => {
-    if (userId){
-      res.json({result: true, user: data})
+  )
+    if (!updateUser){
+      return res.status(400).json({result: false, error: "Utilisateur non trouvé"})
     } else {
-      res.json({result: false, error: "Vous n'êtes pas autorisé"})
+      res.json({result: true})
+    }} catch (error){
+      console.error("Erreur dans /reset :", error.message)
+      res.status(500).json({result: false, error: 'Erreur interne du serveur - Reset'})
     }
   })
-})
+
 
 
 
@@ -117,7 +153,12 @@ router.get('/', (req, res) => {
 
       ///////// GET user profile  ///////////
 router.get('/data', authenticateToken, (req, res) =>{
-  const userId=req.user.userId
+  try{
+    const userId = req.user.userId
+
+  if (!userId) {
+    return res.status(401).json({result: false, error:"Vous n'êtes pas autorisé."})
+  }
   User.findById(userId)
   .then(data => {
     if (userId){
@@ -129,9 +170,17 @@ router.get('/data', authenticateToken, (req, res) =>{
         UnlockedAchievements: data.UnlockedAchievements
       })
     } else {
-      res.json({result: false, error : "Vous n'êtes pas autorisé"})
+      return res.status(404).json({result: false, error : "Vous n'êtes pas autorisé"})
     }
   })
+  .catch(err =>{
+    console.error('Erreur lors du findByID :', err.message)
+    res.status(500).json({result: false, error: 'Erreur serveur lors de la recherche User'})
+  })
+}catch (error){
+  console.error("Erreur inattendue dans /data :", error.message)
+  res.status(500).json({result: false, error: "Erreur interne du serveur"})
+}
 })
 
 ///////////////////Routes PUT//////////////////////
@@ -154,10 +203,15 @@ router.post('/givStats', authenticateToken, (req,res) => {
 
     ///////// MAJ paramètres  /////////
 router.put('/settings', authenticateToken, (req, res) => {
-  const {volume, soundOn} = req.body;
-  const userId= req.user.userId
+  try{
+  const userId= req.user.userId;
 
+  if (!userId){
+    return res.status(401).json({restul: false, error: "Vous n'êtes pas autorisé."})
+  }
+  const {volume, soundOn} = req.body;
   const updateSettings = {};
+
   if(volume !== undefined) updateSettings['settings.volume'] = volume;
   if(soundOn !== undefined) updateSettings['settings.soundOn'] = soundOn;
 
@@ -169,21 +223,38 @@ router.put('/settings', authenticateToken, (req, res) => {
   .then(data => {
     res.json({result: true, settings: data.settings})
   })
-  .catch(error => {
-    res.json({result: false, error: error.message || 'Erreur de mise à jour'})
+  .catch(err =>{
+    console.error('Erreur lors du findByID :', err.message)
+    res.status(500).json({result: false, error: 'Erreur serveur lors de la recherche Settings'})
   })
+}catch (error){
+  console.error("Erreur inattendue dans /settings :", error.message)
+  res.status(500).json({result: false, error: "Erreur interne du serveur - settings"})
+}
 })
 
 
 ///////////////////Routes Delete//////////////////////
     ///////// Delete account  /////////
                               //↓ middleware//
-router.delete('/delAccount', authenticateToken, (req, res) => {
+router.delete('/', authenticateToken, (req, res) => {
+try{
+  const userId= req.user.userId; //info provenant du Middleware
 
-  const userId=req.user.userId //info provenant du Middleware
+  if (!userId){
+    return res.status(401).json({restul: false, error: "Vous n'êtes pas autorisé."})
+  }
   User.findByIdAndDelete(userId).then(()=>{
     res.json({result: true, message: 'Compte supprimé'})
   })
+  .catch(err =>{
+    console.error('Erreur lors du findByIDAndDelete :', err.message)
+    res.status(500).json({result: false, error: 'Erreur serveur lors de la recherche delete'})
+  })
+}catch (error){
+  console.error("Erreur inattendue dans /delete :", error.message)
+  res.status(500).json({result: false, error: "Erreur interne du serveur"})
+}
 })
 
 module.exports = router;
