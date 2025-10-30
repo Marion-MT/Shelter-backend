@@ -44,18 +44,19 @@ const userId = req.user.userId
     const user = await User.findById(userId)
 
    //console.log('User de la bd : ' ,user)
+   /*
         if(!user) {
             return res.json({ result : false , error: ' Utilisateur non trouvé'})
         }
         if(!user.historicGames.includes(newGame._id)){
             user.historicGames.push(newGame._id)
         }
-
+*/
         user.currentGame = newGame._id
 
         await user.save()
 
-        
+    
 
     return res.json({ result: true, message: 'Nouvelle partie crée', game: populatedGame})
 
@@ -91,6 +92,8 @@ router.get('/current', authenticateToken, async (req,res) => {
             path: 'currentGame',
             populate: 'currentCard'
         })
+        
+
     if (!user.currentGame) {
         return res.json({ result:false , error: 'Aucune game en cours'})
     }
@@ -110,6 +113,7 @@ router.post('/choice', authenticateToken, async (req,res) => {
         const userId = req.user.userId
         const { choice } = req.body;
         const achievementsCurrentGame = []
+
         if (!checkBody(req.body,['choice'])) {
             return res.json({ result: false, error: 'Missing or empty fields'})
             ;
@@ -121,6 +125,7 @@ router.post('/choice', authenticateToken, async (req,res) => {
             path: 'currentGame',
             populate: 'currentCard'
         })
+        .populate('unlockedAchievements')
         
         if(!user.currentGame) {
             return res.json({ result:false , error : 'Aucune partie en cours !'})
@@ -183,7 +188,7 @@ router.post('/choice', authenticateToken, async (req,res) => {
         // on recup game populate pour la reponse
         const populatedGame = await Game.findById(game._id).populate('currentCard')
         
-        console.log(Achiev)
+        //console.log(Achiev)
     return res.json({ 
         result : true ,
         gameover: false ,

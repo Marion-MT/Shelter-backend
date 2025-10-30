@@ -30,7 +30,7 @@ const applyChoiceEffects = (game, choiceSimp) => {
     });
 
         if(choiceSimp.trigger){
-            game.currentScenarios = game.currentScenarios.push(choiceSimp.trigger)
+            game.currentScenarios.push(choiceSimp.trigger)
         }
 
         else if(choiceSimp.endTrigger){
@@ -40,7 +40,7 @@ const applyChoiceEffects = (game, choiceSimp) => {
             throw new Error(`Le trigger "${choiceSimp.endTrigger}" n'existe pas dans currentScenarios`)
              }
 
-            game.currentScenarios.filter( e => e !== choiceSimp.endTrigger)
+           game.currentScenarios = game.currentScenarios.filter( e => e !== choiceSimp.endTrigger)
         }
     game.markModified('stateOfGauges');             // <--- sert marquer le sous-document comme modifier sinon crash "de ce que j'ai compris detecte pas les modif des sous doc imbriqué"    
 } 
@@ -120,6 +120,35 @@ const manageCardCooldown = async (game) => {
 }
 
 /*
+- verifie si un évenement doit être déclenché
+*/
+
+const checkEvent = async (game) => {
+
+const MIN_DAY_EVENT = 5    // Jours min avant événement
+const MAX_DAY_EVENT = 10   // Jours max avant événement
+
+//calcule la diff depuis le dernier event
+const diff = game.numberDays - game.lastEventDay 
+
+// si pas assez de j passés du coup pas d'event
+if ( diff < MIN_DAY_EVENT ) // 3 < 5
+    {
+        return false
+    }
+
+
+    // si min atteint tu récup un chiffre entre MIN 5 et MAX 10
+    const rand = Math.floor(Math.random() * (MAX_DAY_EVENT - MIN_DAY_EVENT + 1) + MIN_DAY_EVENT)
+
+    // si la diff depasse random en déclanche event
+    if (diff > rand) {
+        return true
+    }
+
+    return false
+}
+/*
 - récupere la prochaine carte selon les filtres
 game = la partie en cours
 choiceSimp = le choix fais (droite ou gauche)
@@ -133,10 +162,16 @@ const getNextCard = async (game, choiceSimp) => {
 
     let filter = { }
 
-    // rajout des filtre si next pool/card
+    // rajout des filtre si event si non nextCard si non nextPool
+
+
+    if (await checkEvent(game)){
+        filter.pool = "event"
+        game.lastEventDay = game.numberDays
+    }
 
     // on check si on doit obligatoirement avoir une nextCard si non 
-    if (choiceSimp.nextCard){
+    else if (choiceSimp.nextCard){
         filter.key = choiceSimp.nextCard
     }
     
@@ -144,8 +179,12 @@ const getNextCard = async (game, choiceSimp) => {
     else if (choiceSimp.nextPool){
         filter.pool = choiceSimp.nextPool
     }
+
+
     // on recupe le pool basique
     else{
+
+        
 
         // on utilise $in parceque c'est un tableau
             filter.pool = { $in: game.currentScenarios };
@@ -201,7 +240,7 @@ const endGame = async (game, user, deathReason, achievements) => {
         gauges: game.stateOfGauges,
         death: death,
         bestscore: user.bestScore,
-        achievements : achievements.length < 0 ? achievements : null ,
+        achievements : achievements ? achievements : null ,
     }
 }
 
@@ -240,5 +279,6 @@ module.exports = {
     manageCardCooldown,
     getNextCard,
     endGame,
-    prepareNewGame
+    prepareNewGame,
+    checkEvent,
 };

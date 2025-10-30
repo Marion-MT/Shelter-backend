@@ -8,7 +8,10 @@ const achievementSchema = mongoose.Schema({
         enum: ['card', 'function'],
         required: true
     },
-    conditions: {type: [Object], default: null}
+    conditions: {
+        type: Object,
+         _id: false   // pour eviter de faire buger json engine rule ca empeche de créer un id dans un object ou array
+        }
 });
 
 const Achievement = mongoose.model('achievements', achievementSchema);

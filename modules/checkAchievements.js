@@ -5,19 +5,33 @@ async function checkAchievements(user, game) {
     
     const engine = new Engine();   // <-- ici on creer une instance du moteur qui vas evaluer les régles 
 
+       if (!user || !user.unlockedAchievements) {
+        throw new Error('user ou unlockedAchievements non défini')
+    }
+
+
     const unlockedIds = user.unlockedAchievements;
     const achievements = await Achievement.find({ 
     _id: { $nin: unlockedIds }  // Ignore ceux déjà débloqués
     }); // <-- tu récuperes les régles ici 
 
+
     // le succès dois contenir obligatoirement une conditions (régles)  sous forma JSON
 
    for (const ach of achievements) {
+
+        if (!ach.conditions) {
+            //console.log('Skip (pas de conditions):', ach.name);
+        continue;
+    }
+
+
     engine.addRule({
         conditions: ach.conditions,                 // tu ajoutes la regles dans le moteur 
-        event: {type: 'achievement', params: { id: ach._id }}       // tu lui dis quoi faire  quand la condition est vrai exemple "quand les conditions sont vrai, previens moi que le succès 'machin' est débloqué" 
-    })
-   } 
+        event: {type: 'achievement', params: { id: ach._id , name : ach.name} }       // tu lui dis quoi faire  quand la condition est vrai exemple "quand les conditions sont vrai, previens moi que le succès 'machin' est débloqué" 
+            })    
+       
+}
 
    // facts represente l'état de la partie actuel
    const facts = {
