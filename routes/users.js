@@ -258,7 +258,7 @@ try{
 })
 
 
-///////// GET top 3 best score  ///////////
+///////// GET top 3 best score by player///////////
 router.get('/topScores',  authenticateToken, async (req, res) =>{
   try{
     const userId = req.user.userId
@@ -274,7 +274,7 @@ router.get('/topScores',  authenticateToken, async (req, res) =>{
 
     const topScores = topScoresDocs.map(doc => doc.bestScore);
 
-  return res.json({result : true, topScore : topScores});
+  return res.json({result : true, topScores : topScores});
 
   }catch (error){
     console.error("Erreur inattendue dans /delete :", error.message);
