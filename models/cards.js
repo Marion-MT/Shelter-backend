@@ -14,7 +14,7 @@ const choiceSchema = mongoose.Schema({
         food: { type: Number, default : 0 }
         },
     consequence: { type: String, default: null },
-    triggerAchievement: {type: String, default: null}
+    triggerAchievement: {type: [String], default: null}
 });
 
 const conditionsSchema = mongoose.Schema({

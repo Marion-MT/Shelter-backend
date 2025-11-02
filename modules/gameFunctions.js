@@ -183,7 +183,7 @@ const getNextCard = async (game, choiceSimp) => {
     // cartes a exclure
     const exludedIds =  game.usedCards.map(card => card.cardId)
 
-    console.log('exludedIds: ',exludedIds)
+   // console.log('exludedIds: ',exludedIds)
     let filter = { }
 
     // rajout des filtre si event si non nextCard si non nextPool
@@ -227,8 +227,8 @@ const getNextCard = async (game, choiceSimp) => {
 
         // on recherche les cartes
         const cards = await Card.find(combinedFilter)
-        console.log('id des carte:', cards.map(card => card._id))
-        console.log('Nombres de cartes trouvées:', cards.length)
+       // console.log('id des carte:', cards.map(card => card._id))
+       // console.log('Nombres de cartes trouvées:', cards.length)
         if(cards.length === 0) {
             throw new Error('Aucune carte disponible')
         }
