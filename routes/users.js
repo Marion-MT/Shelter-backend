@@ -17,7 +17,10 @@ const authenticateToken = require ('../middlewares/authMiddleWare')
     return;
   }
   try {
-  const {email, username, password} = req.body;
+    const {email, username, password} = req.body;
+    if(!username.trim()) {
+      return res.json({result: false, error: "Le nom d'utilisateur ne peut pas être vide"})
+    }
     // Check si utilisateur déjà inscrit avant de créer un nouvel utilisateur
   User.findOne({username})
   .then(data =>{
