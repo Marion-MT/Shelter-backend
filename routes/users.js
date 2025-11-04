@@ -35,28 +35,54 @@ const FRONT_END_RESET = process.env.FRONT_END_RESET
         email,
         username,
         password: hash, 
+        refreshToken: [],
       })
       newUser.save()
       .then(data => {
         //création du token
-        const token = jwt.sign(
+        const accessToken = jwt.sign(
           {id: data._id},
           process.env.JWT_SECRET,
-          {expiresIn: '24h'}
+          {expiresIn: '1m'}
         );
-        data.token = token;
-        data.save();
 
-        res.json({result: true, 
-          token,
+        //création du refresh token
+        const refreshToken = jwt.sign(
+          {id: data._id},
+          process.env.REFRESH_SECRET,
+          {expiresIn: '7d'}
+        );
+
+
+        data.refreshToken.push({
+          token: refreshToken,
+          expiresAt: new Date(Date.now() + 7*24*60*60*1000) // date d'expiration dans 7 jours
+        });
+
+        //sauvegarde le token en BDD
+    
+        data.save()
+        .then(() => {
+
+          //renvoyer le token au client)
+        res.json({
+          result: true, 
+          token: accessToken,    // token court pour accès aux routes protégées
+          refreshToken,  // token long pour renouveler le token d'accès
           user: {
           email: data.email,
-          username: data.username }
+          username: data.username 
+        }
         })
       })
       .catch(err => {
+        console.error('Erreur sauvegarde tokens :', err.message)
+        res.status(500).json({result: false, error: 'Erreur serveur' })
+      })
+      })
+      .catch(err => {
         console.error('Erreur lors du .save :', err.message)
-        res.status(500).json({result: false, error: 'Erreur serveur lors de la sauvegarde' })
+        res.status(500).json({result: false, error: 'Erreur serveur lors de la sauvegarde'})
       })
     } else {
       //si l'utilisateur existe déjà
@@ -87,17 +113,32 @@ router.post('/signin', (req, res) => {
   User.findOne({username}).then(data=>{
     if (data && bcrypt.compareSync(password, data.password)){
       //génération du token JWT
-      const token= jwt.sign( 
+      const accesToken= jwt.sign( 
         {id: data._id}, //payload (données encodées dans le token)
         process.env.JWT_SECRET, // clé secrète dans le .env
-        {expiresIn:'24h'}) //délai de validité du jeton
+        {expiresIn:'1m'}) //délai de validité du jeton
+
+        //création du refresh token
+        const refreshToken = jwt.sign(
+          {id: data._id},
+          process.env.REFRESH_SECRET,
+          {expiresIn: '7d'}
+        );
+
+        data.refreshToken.push({
+          token: refreshToken,
+          expiresAt: new Date(Date.now() + 7*24*60*60*1000) // date d'expiration dans 7 jours
+        });
+        
+        // Génération du token JWT
 
         //sauvegarde le token en BDD
-        data.token = token;
         data.save().then(() =>{
-        //Renvoyer le token au client
+
+        //Renvoyer les token au client
       res.json({result: true, 
-        token, 
+        token: accesToken,   // token court pour accès aux routes protégées
+        refreshToken,  // token long pour renouveler le token d'accès
         message: 'you are connected',
         user: {
           email: data.email,
@@ -360,11 +401,12 @@ router.put('/settings', authenticateToken, (req, res) => {
   if (!userId){
     return res.status(401).json({restul: false, error: "Vous n'êtes pas autorisé."})
   }
-  const {volume, soundOn} = req.body;
+  const {volume, soundOn, btnSoundOn} = req.body;
   const updateSettings = {};
 
   if(volume !== undefined) updateSettings['settings.volume'] = volume;
   if(soundOn !== undefined) updateSettings['settings.soundOn'] = soundOn;
+  if(btnSoundOn !== undefined) updateSettings['settings.btnSoundOn'] = btnSoundOn;
 
   User.findByIdAndUpdate(
     userId,
