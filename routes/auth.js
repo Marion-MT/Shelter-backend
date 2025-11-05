@@ -27,22 +27,7 @@ router.post('/refresh', async (req, res) =>{
             
         }
 
-   // ✅ DEBUG
-    console.log('Checking token validity...');
-    console.log('Token match:', user.refreshToken.token === refreshToken);
-    console.log('ExpiresAt:', new Date(user.refreshToken.expiresAt));
-    console.log('Now:', new Date());
-    console.log('Valid:', new Date(user.refreshToken.expiresAt) > new Date());
 
-       // ✅ Vérification correcte
-    if (
-      !user.refreshToken || 
-      user.refreshToken.token !== refreshToken || 
-      new Date(user.refreshToken.expiresAt) < new Date()
-    ) {
-      console.error('Token invalid');
-      return res.json({ result: false, error: 'Invalid refresh token' });
-    }
 
         // on verifie que le refesh token existe et qu'il n'est pas expiré
         const tokenExiste = user.refreshToken.token === refreshToken;
@@ -55,14 +40,14 @@ router.post('/refresh', async (req, res) =>{
             const accessToken = jwt.sign(
                 { id: decoded.id },
                 process.env.JWT_SECRET,
-                { expiresIn: '1m' } // durée de validité du token d'accès
+                { expiresIn: '15m' } // durée de validité du token d'accès
             );
             
             // on Remplace le refresh token aussi
     const newRefreshToken = jwt.sign(
         { id: user._id },
         process.env.REFRESH_SECRET,
-        { expiresIn: '2m' }
+        { expiresIn: '7d' }
     );
     
     user.refreshToken = {

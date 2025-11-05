@@ -43,7 +43,7 @@ const FRONT_END_RESET = process.env.FRONT_END_RESET
         const accessToken = jwt.sign(
           {id: data._id},
           process.env.JWT_SECRET,
-          {expiresIn: '1m'}
+          {expiresIn: '15m'}
         );
 
         //création du refresh token
@@ -116,7 +116,7 @@ router.post('/signin', (req, res) => {
       const accesToken= jwt.sign( 
         {id: data._id}, //payload (données encodées dans le token)
         process.env.JWT_SECRET, // clé secrète dans le .env
-        {expiresIn:'1m'}) //délai de validité du jeton
+        {expiresIn:'15m'}) //délai de validité du jeton
 
         //création du refresh token
         const refreshToken = jwt.sign(
