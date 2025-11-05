@@ -19,9 +19,7 @@ async function checkAchievements(user, game, triggered) {
     
     if (triggered && triggered.length > 0) {
         for (const nameAchiv of triggered) {
-            console.log('Triggered Achievement Name:', nameAchiv);
             const ach = achievements.find(a => a.cardKey === nameAchiv);
-            console.log('Triggered Achievement Found:', ach);
             if (ach) {
                 events.push({
                     type: 'achievement',
@@ -36,7 +34,6 @@ async function checkAchievements(user, game, triggered) {
    for (const ach of achievements) {
 
         if (!ach.conditions) {
-            //console.log('Skip (pas de conditions):', ach.name);
         continue;
     }
 

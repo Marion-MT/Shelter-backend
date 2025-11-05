@@ -49,8 +49,6 @@ async function sendResetEmail(email, resetLink) {
     
     try {
         await transporter.sendMail(mailOptions);
-        console.log('✅ Email envoyé à:', email);
-        console.log('🔗 Reset link:', resetLink);
     } catch (error) {
         console.error('❌ Erreur envoi email:', error);
         throw error;
