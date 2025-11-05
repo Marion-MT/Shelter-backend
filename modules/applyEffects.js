@@ -9,7 +9,6 @@ async function applyEffects(game,choice) {
  }
 game.markModified('stateOfGauges');
 await game.save()
-console.log(game)
 }
 
 module.exports = { applyEffects };
