@@ -272,7 +272,7 @@ router.get('/verify-reset-token/:token', async (req, res) => {
             return res.status(400).json({ valid: false, message: 'Token invalide ou expiré' });
         }
         
-        return res.json({ valid: true });
+        return res.status(200).json({ valid: true });
     } catch (error) {
         res.status(500).json({ error: 'Erreur serveur' });
     }
