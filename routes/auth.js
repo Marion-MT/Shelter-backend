@@ -3,6 +3,9 @@ var router = express.Router();
 const jwt = require('jsonwebtoken');
 const User = require('../models/users');
 
+const timeLimitAccessToken = process.env.TIME_LIMITE_ACCESS_TOKEN
+const timeLimitRefreshToken = process.env.TIME_LIMITE_REFRESH_TOKEN
+
 /* Refresh token */
 router.post('/refresh', async (req, res) =>{
  try {
@@ -40,14 +43,14 @@ router.post('/refresh', async (req, res) =>{
             const accessToken = jwt.sign(
                 { id: decoded.id },
                 process.env.JWT_SECRET,
-                { expiresIn: '15m' } // durée de validité du token d'accès
+                { expiresIn: timeLimitAccessToken } // durée de validité du token d'accès
             );
             
             // on Remplace le refresh token aussi
     const newRefreshToken = jwt.sign(
         { id: user._id },
         process.env.REFRESH_SECRET,
-        { expiresIn: '7d' }
+        { expiresIn: timeLimitRefreshToken }
     );
     
     user.refreshToken = {

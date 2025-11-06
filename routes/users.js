@@ -10,6 +10,8 @@ const nodemailer = require('nodemailer');
 const crypto = require('crypto')
 const { sendResetEmail } = require('../utilitaires/emailService');
 
+const timeLimitRefreshToken = process.env.TIME_LIMITE_REFRESH_TOKEN
+const timeLimitAccessToken = process.env.TIME_LIMITE_ACCESS_TOKEN
 const FRONT_END_RESET = process.env.FRONT_END_RESET
 
 /////////////////Routes POST////////////////////
@@ -43,14 +45,14 @@ const FRONT_END_RESET = process.env.FRONT_END_RESET
         const accessToken = jwt.sign(
           {id: data._id},
           process.env.JWT_SECRET,
-          {expiresIn: '15m'}
+          {expiresIn: timeLimitAccessToken }
         );
 
         //création du refresh token
         const refreshToken = jwt.sign(
           {id: data._id},
           process.env.REFRESH_SECRET,
-          {expiresIn: '7d'}
+          {expiresIn: timeLimitRefreshToken}
         );
 
 
@@ -116,13 +118,13 @@ router.post('/signin', (req, res) => {
       const accesToken= jwt.sign( 
         {id: data._id}, //payload (données encodées dans le token)
         process.env.JWT_SECRET, // clé secrète dans le .env
-        {expiresIn:'15m'}) //délai de validité du jeton
+        {expiresIn: timeLimitAccessToken }) //délai de validité du jeton
 
         //création du refresh token
         const refreshToken = jwt.sign(
           {id: data._id},
           process.env.REFRESH_SECRET,
-          {expiresIn: '7d'}
+          {expiresIn: timeLimitRefreshToken }
         );
 
         data.refreshToken = {
